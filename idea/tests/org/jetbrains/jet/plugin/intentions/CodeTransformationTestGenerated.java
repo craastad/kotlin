@@ -2600,6 +2600,52 @@ public class CodeTransformationTestGenerated extends AbstractCodeTransformationT
             doTestReplaceInvokeIntention("idea/testData/intentions/attributeCallReplacements/replaceInvokeIntention/varargInvoke.kt");
         }
         
+        @TestMetadata("illegalMultipleOperators.kt")
+        public void testIllegalMultipleOperators() throws Exception {
+            doTestReplaceWithOperatorAssign("idea/testData/intentions/replaceWithOperatorAssign/illegalMultipleOperators.kt");
+        }
+        
+        @TestMetadata("illegalMultipleOperatorsMiddle.kt")
+        public void testIllegalMultipleOperatorsMiddle() throws Exception {
+            doTestReplaceWithOperatorAssign("idea/testData/intentions/replaceWithOperatorAssign/illegalMultipleOperatorsMiddle.kt");
+        }
+        
+        @TestMetadata("invalidSubtraction.kt")
+        public void testInvalidSubtraction() throws Exception {
+            doTestReplaceWithOperatorAssign("idea/testData/intentions/replaceWithOperatorAssign/invalidSubtraction.kt");
+        }
+        
+        @TestMetadata("multipleOperators.kt")
+        public void testMultipleOperators() throws Exception {
+            doTestReplaceWithOperatorAssign("idea/testData/intentions/replaceWithOperatorAssign/multipleOperators.kt");
+        }
+        
+        @TestMetadata("multipleOperatorsRightSideRepeat.kt")
+        public void testMultipleOperatorsRightSideRepeat() throws Exception {
+            doTestReplaceWithOperatorAssign("idea/testData/intentions/replaceWithOperatorAssign/multipleOperatorsRightSideRepeat.kt");
+        }
+        
+        @TestMetadata("nonRepeatingAssignment.kt")
+        public void testNonRepeatingAssignment() throws Exception {
+            doTestReplaceWithOperatorAssign("idea/testData/intentions/replaceWithOperatorAssign/nonRepeatingAssignment.kt");
+        }
+        
+        @TestMetadata("rightSideRepeat.kt")
+        public void testRightSideRepeat() throws Exception {
+            doTestReplaceWithOperatorAssign("idea/testData/intentions/replaceWithOperatorAssign/rightSideRepeat.kt");
+        }
+        
+        @TestMetadata("simpleAssign.kt")
+        public void testSimpleAssign() throws Exception {
+            doTestReplaceWithOperatorAssign("idea/testData/intentions/replaceWithOperatorAssign/simpleAssign.kt");
+        }
+        
+        @TestMetadata("validSubtraction.kt")
+        public void testValidSubtraction() throws Exception {
+            doTestReplaceWithOperatorAssign("idea/testData/intentions/replaceWithOperatorAssign/validSubtraction.kt");
+>>>>>>> New Intention Action: Replace with operator assign
+        }
+        
     }
     
     @TestMetadata("idea/testData/intentions/simplifyNegatedBinaryExpressionIntention")
