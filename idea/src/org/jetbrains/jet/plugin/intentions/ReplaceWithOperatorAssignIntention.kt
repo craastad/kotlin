@@ -24,9 +24,20 @@ import org.jetbrains.jet.lang.psi.JetSimpleNameExpression
 import org.jetbrains.jet.plugin.project.AnalyzerFacadeWithCache
 import org.jetbrains.jet.lang.resolve.BindingContext
 import org.jetbrains.jet.plugin.util.JetPsiMatcher
+import org.jetbrains.jet.lang.descriptors.ClassDescriptor
 import org.jetbrains.jet.lang.types.lang.KotlinBuiltIns
 
 public class ReplaceWithOperatorAssignIntention : JetSelfTargetingIntention<JetBinaryExpression>("replace.with.operator.assign.intention", javaClass()) {
+    /*
+     * setText() is a protected function, which is inaccessible from this class.
+     * This override is a workaround for this issue.
+     *
+     * (Related to Issue KT-4617)
+     */
+    override fun setText(text: String) {
+        super<JetSelfTargetingIntention>.setText(text)
+    }
+
     override fun isApplicableTo(element: JetBinaryExpression): Boolean {
         fun isWellFormedAssignment(element : JetBinaryExpression): Boolean {
             val leftExpression = element.getLeft()
@@ -39,8 +50,11 @@ public class ReplaceWithOperatorAssignIntention : JetSelfTargetingIntention<JetB
                     rightExpression.getRight() != null
         }
 
-        [tailRecursive]
         fun checkExpressionRepeat(variableExpression: JetSimpleNameExpression, expression: JetBinaryExpression): Boolean {
+            val context = AnalyzerFacadeWithCache.getContextForElement(expression)
+            val descriptor = context[BindingContext.REFERENCE_TARGET, expression.getOperationReference()]?.getContainingDeclaration()
+            val isPrimitiveOperation = descriptor is ClassDescriptor && KotlinBuiltIns.getInstance().isPrimitiveType(descriptor.getDefaultType())
+
             when {
                 JetPsiMatcher.checkElementMatch(variableExpression, expression.getLeft()) -> {
                     val validity = expression.getOperationToken() == JetTokens.PLUS ||
@@ -49,27 +63,24 @@ public class ReplaceWithOperatorAssignIntention : JetSelfTargetingIntention<JetB
                     expression.getOperationToken() == JetTokens.DIV ||
                     expression.getOperationToken() == JetTokens.PERC
 
-                    //val context = AnalyzerFacadeWithCache.getContextForElement(expression)
-                    //val descriptor = context[BindingContext.REFERENCE_TARGET, expression.getOperationReference()]?.getContainingDeclaration()
-
-                    //if (validity)
-                    //    setText("Replace with ${expression.getOperationReference().getText()}= Expression")
+                    if (validity) {
+                        setText("Replace with ${expression.getOperationReference().getText()}= Expression")
+                    }
 
                     return validity
                 }
                 JetPsiMatcher.checkElementMatch(variableExpression, expression.getRight()) -> {
-                    val validity = expression.getOperationToken() == JetTokens.PLUS ||
-                    expression.getOperationToken() == JetTokens.MUL
+                    val validity = (expression.getOperationToken() == JetTokens.PLUS ||
+                    expression.getOperationToken() == JetTokens.MUL) &&
+                    isPrimitiveOperation
 
-                    //val context = AnalyzerFacadeWithCache.getContextForElement(expression)
-                    //val descriptor = context[BindingContext.REFERENCE_TARGET, expression.getOperationReference()]?.getContainingDeclaration()
-
-                    //if (validity)
-                    //    setText("Replace with ${expression.getOperationReference().getText()}= Expression")
+                    if (validity) {
+                        setText("Replace with ${expression.getOperationReference().getText()}= Expression")
+                    }
 
                     return validity
                 }
-                expression.getLeft() is JetBinaryExpression -> return checkExpressionRepeat(variableExpression, expression.getLeft() as JetBinaryExpression)
+                expression.getLeft() is JetBinaryExpression -> return isPrimitiveOperation && checkExpressionRepeat(variableExpression, expression.getLeft() as JetBinaryExpression)
                 else -> return false
             }
         }
