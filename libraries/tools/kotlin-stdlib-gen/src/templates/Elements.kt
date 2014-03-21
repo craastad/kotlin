@@ -9,11 +9,22 @@ fun elements(): List<GenericFunction> {
         doc { "Returns true if *element* is found in the collection" }
         returns("Boolean")
         body {
-            "return indexOf(element) >= 0"
+            """
+            if (this is Collection<*>)
+                return contains(element)
+            return indexOf(element) >= 0
+            """
+        }
+        exclude(Strings, Lists, Collections)
+        body(ArraysOfPrimitives, ArraysOfObjects) {
+            """
+            return indexOf(element) >= 0
+            """
         }
     }
 
     templates add f("indexOf(element: T)") {
+        exclude(Strings)
         doc { "Returns first index of *element*, or -1 if the collection does not contain element" }
         returns("Int")
         body {
@@ -59,6 +70,7 @@ fun elements(): List<GenericFunction> {
     }
 
     templates add f("lastIndexOf(element: T)") {
+        exclude(Strings) // has native implementation
         doc { "Returns last index of *element*, or -1 if the collection does not contain element" }
         returns("Int")
         body {
@@ -74,7 +86,6 @@ fun elements(): List<GenericFunction> {
             """
         }
 
-        include(Lists)
         body(Lists, ArraysOfObjects) {
             """
             if (element == null) {
@@ -134,7 +145,7 @@ fun elements(): List<GenericFunction> {
             throw IndexOutOfBoundsException("Collection doesn't contain element at index")
             """
         }
-        body(Lists, ArraysOfObjects, ArraysOfPrimitives) {
+        body(Strings, Lists, ArraysOfObjects, ArraysOfPrimitives) {
             """
             return get(index)
             """
@@ -152,8 +163,10 @@ fun elements(): List<GenericFunction> {
             return iterator.next()
             """
         }
-        body(Lists, ArraysOfObjects, ArraysOfPrimitives) {
+        body(Strings, Lists, ArraysOfObjects, ArraysOfPrimitives) {
             """
+            if (size == 0)
+                throw IllegalArgumentException("Collection is empty")
             return this[0]
             """
         }
@@ -169,7 +182,7 @@ fun elements(): List<GenericFunction> {
             return iterator.next()
             """
         }
-        body(Lists, ArraysOfObjects, ArraysOfPrimitives) {
+        body(Strings, Lists, ArraysOfObjects, ArraysOfPrimitives) {
             """
             return if (size > 0) this[0] else null
             """
@@ -221,7 +234,7 @@ fun elements(): List<GenericFunction> {
             }
             """
         }
-        body(Lists, ArraysOfObjects, ArraysOfPrimitives) {
+        body(Strings, Lists, ArraysOfObjects, ArraysOfPrimitives) {
             """
             if (size == 0)
                 throw IllegalArgumentException("Collection is empty")
@@ -249,8 +262,7 @@ fun elements(): List<GenericFunction> {
             }
             """
         }
-        include(Lists)
-        body(Lists, ArraysOfObjects, ArraysOfPrimitives) {
+        body(Strings, Lists, ArraysOfObjects, ArraysOfPrimitives) {
             """
             return if (size > 0) this[size - 1] else null
             """
@@ -258,45 +270,51 @@ fun elements(): List<GenericFunction> {
     }
 
     templates add f("last(predicate: (T) -> Boolean)") {
+        inline(true)
         doc { "Returns last element matching the given *predicate*" }
         returns("T")
         body {
             """
-            fun first(it : Iterator<T>) : T {
-                for (element in it) if (predicate(element)) return element
-                throw IllegalArgumentException("Collection doesn't contain any element matching predicate")
-            }
             val iterator = iterator()
-            var last = first(iterator)
-            while (iterator.hasNext()) {
-                val element = iterator.next()
+            var last : T? = null
+            for (element in iterator) {
+                if (predicate(element)) {
+                    last = element
+                    break
+                }
+            }
+            if (last == null)
+                throw IllegalArgumentException("Collection doesn't contain any element matching predicate")
+            for (element in iterator) {
                 if (predicate(element))
                     last = element
             }
-            return last
+            return last!!
             """
         }
     }
 
     templates add f("lastOrNull(predicate: (T) -> Boolean)") {
+        inline(true)
         doc { "Returns last element matching the given *predicate*, or null if element was not found" }
         returns("T?")
         body {
             """
-            fun first(it : Iterator<T>) : T? {
-                for (element in it) if (predicate(element)) return element
-                return null
-            }
             val iterator = iterator()
-            var last = first(iterator)
+            var last : T? = null
+            for (element in iterator) {
+                if (predicate(element)) {
+                    last = element
+                    break
+                }
+            }
             if (last == null)
                 return null
-            while (iterator.hasNext()) {
-                val element = iterator.next()
+            for (element in iterator) {
                 if (predicate(element))
                     last = element
             }
-            return last
+            return last!!
             """
         }
     }
@@ -321,7 +339,7 @@ fun elements(): List<GenericFunction> {
             }
             """
         }
-        body(ArraysOfObjects, ArraysOfPrimitives) {
+        body(Strings, Lists, ArraysOfObjects, ArraysOfPrimitives) {
             """
             if (size != 1)
                 throw IllegalArgumentException("Collection has ${bucks}size elements")
@@ -349,7 +367,7 @@ fun elements(): List<GenericFunction> {
             }
             """
         }
-        body(ArraysOfObjects, ArraysOfPrimitives) {
+        body(Strings, Lists, ArraysOfObjects, ArraysOfPrimitives) {
             """
             if (size == 0)
                 return null
@@ -361,43 +379,44 @@ fun elements(): List<GenericFunction> {
     }
 
     templates add f("single(predicate: (T) -> Boolean)") {
+        inline(true)
         doc { "Returns single element matching the given *predicate*, or throws exception if there is no or more than one element" }
         returns("T")
         body {
             """
-            fun first(it : Iterator<T>) : T {
-                for (element in it) if (predicate(element)) return element
-                throw IllegalArgumentException("Collection doesn't have matching element")
+            var single : T? = null
+            for (element in this) {
+                if (predicate(element)) {
+                    if (single == null) {
+                        single = element
+                    } else {
+                        throw IllegalArgumentException("Collection contains more than one matching element")
+                    }
+                }
             }
-            val iterator = iterator()
-            var single = first(iterator)
-            while (iterator.hasNext()) {
-                val element = iterator.next()
-                if (predicate(element))
-                    throw IllegalArgumentException("Collection has more than one matching element")
+            if (single == null) {
+                throw IllegalArgumentException("Collection doesn't contain matching element")
             }
-            return single
+            return single!!
             """
         }
     }
 
     templates add f("singleOrNull(predicate: (T) -> Boolean)") {
+        inline(true)
         doc { "Returns single element matching the given *predicate*, or null if element was not found or more than one elements were found" }
         returns("T?")
         body {
             """
-            fun first(it : Iterator<T>) : T? {
-                for (element in it) if (predicate(element)) return element
-                return null
-            }
-            val iterator = iterator()
-            var single = first(iterator)
-            if (single == null)
-                return null
-            while (iterator.hasNext()) {
-                val element = iterator.next()
-                if (predicate(element))
-                    throw IllegalArgumentException("Collection has more than one matching element")
+            var single : T? = null
+            for (element in this) {
+                if (predicate(element)) {
+                    if (single == null) {
+                        single = element
+                    } else {
+                        throw IllegalArgumentException("Collection contains more than one matching element")
+                    }
+                }
             }
             return single
             """
