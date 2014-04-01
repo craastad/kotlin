@@ -27,7 +27,6 @@ import org.jetbrains.jet.lang.descriptors.annotations.Annotations;
 import org.jetbrains.jet.lang.descriptors.impl.SimpleFunctionDescriptorImpl;
 import org.jetbrains.jet.lang.psi.*;
 import org.jetbrains.jet.lang.resolve.BindingContext;
-import org.jetbrains.jet.lang.resolve.DescriptorUtils;
 import org.jetbrains.jet.lang.resolve.name.Name;
 
 import java.util.Collections;
@@ -99,13 +98,11 @@ public abstract class ClassBodyCodegen extends MemberCodegen {
             }
         }
 
-        if (!DescriptorUtils.isTrait(descriptor)) {
-            for (DeclarationDescriptor memberDescriptor : descriptor.getDefaultType().getMemberScope().getAllDescriptors()) {
-                if (memberDescriptor instanceof FunctionDescriptor) {
-                    FunctionDescriptor member = (FunctionDescriptor) memberDescriptor;
-                    if (member.getKind() == CallableMemberDescriptor.Kind.FAKE_OVERRIDE) {
-                        functionCodegen.generateBridgesForFakeOverride(member);
-                    }
+        for (DeclarationDescriptor memberDescriptor : descriptor.getDefaultType().getMemberScope().getAllDescriptors()) {
+            if (memberDescriptor instanceof FunctionDescriptor) {
+                FunctionDescriptor member = (FunctionDescriptor) memberDescriptor;
+                if (member.getKind() == CallableMemberDescriptor.Kind.FAKE_OVERRIDE) {
+                    functionCodegen.generateBridges(member);
                 }
             }
         }
